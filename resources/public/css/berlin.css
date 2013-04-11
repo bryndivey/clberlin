@@ -1,0 +1,39 @@
+body {
+    font-family: sans-serif;
+    }
+
+.rawlisting {
+    clear: both;
+    margin-bottom: 4em;
+    }
+
+.rawlisting dt {
+    float: left;
+    width: 10em;
+    clear: left;
+    }
+
+.rawlisting dd {
+    float: left;
+    width: 90%;
+    }
+
+.rawlisting dl {
+    clear: both;
+  }
+    
+.listing {
+    background-color: #eee;
+    padding: 10px;
+    -webkit-border-radius: 4px;
+    border-radius: 4px;
+    margin-bottom: 5px;
+}
+
+img {
+    border-radius: 5px;
+}
+
+.attributes > span {
+    display: block;
+}
