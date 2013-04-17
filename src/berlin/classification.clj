@@ -75,13 +75,12 @@
       :size (first (get-using find-sizes))
       :rooms (first (get-using find-rooms))
       :dates (get-using find-dates)
-      ; :requires-edit  (> (count prices) 1)
-      :requires-edit  (nil? price))
-    ))
+      :requires-edit  (nil? price)
+      :comments (get listing :comments nil)
+      :tags (get listing :tags [])      
+      )))
 
-
-
-;; aggregation
+  ;; aggregation
 
 (defn get-options2
   [listings]
@@ -99,7 +98,8 @@
                                           m
                                           {:prices [(:price l)]
                                            :rooms [(:rooms l)]
-                                           :areas [(:area l)]}))
+                                           :areas [(:area l)]
+                                           :tags (:tags l)}))
                     {}
                     listings)
         opts (apply hash-map (apply concat (map #(list (first %) (filter identity (sort (distinct (second %))))) opts)))

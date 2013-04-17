@@ -99,6 +99,8 @@
    ;; row     
    [:div.row-fluid
     [:div.span3.attributes
+
+     [:span [:b "ID"] ": " (:id listing)]
      
      ;; attributes
      (if (:price listing)
@@ -126,14 +128,25 @@
         [:b "Size"]
         ": " (str (:size listing))])
 
+     [:form {:class "tags" :method "POST" :action (str "/listings/" (:id listing) "/action")}
+      (for [tag (:tags listing)]
+        [:a {:class "remove-tag" :href "#"} [:span {:class "label"} tag]])]
+
+     (comment if (:comments listing)
+       [:span (:comments listing)])
+
      [:form.form-inline {:method "POST" :action (str "/listings/" (:id listing) "/action")}
       [:input {:type "hidden" :name "min-price" :value min-price }]
       [:input {:type "hidden" :name "max-price" :value max-price }]
       (for [area areas]
         [:input {:type "hidden" :name "areas[]" :value area }])
-      [:button {:type "submit" :class "btn" :name "action" :value "seen" :data-id (:id listing)} "Seen"]
-      [:button {:type "submit" :class "btn" :name "action" :value "hidden" :data-id (:id listing)} "Hide"]]       
-     ]
+
+      ;; actions
+      [:button {:type "submit" :class "btn" :name "action" :value "seen"} "Seen"]
+      [:button {:type "submit" :class "btn" :name "action" :value "hidden"} "Hide"]
+      [:input {:type "text" :autocomplete "off" :name "tag" :class "tags-input" :data-provide "typeahead" :data-source "tagsSource"}]
+      
+      (comment [:input {:name "comment" :class "comment-input"}])]]
 
     ;; images
     [:div.span9
@@ -142,16 +155,23 @@
 
    ])
 
-(defpage [:post "/listings/:id/action"] {id :id :keys [action inline min-price max-price areas]}
-  (if (not (some #{action} ["hidden" "seen"]))
+(defpage [:post "/listings/:id/action"] {id :id :keys [action value inline min-price max-price areas]}
+  (println "ACTION" action)
+  (if (not (some #{action} ["hidden" "seen" "comment" "tag" "remove-tag"]))
     ;; error
     (response/status 400 (str "Action " action " is invalid"))
 
     ;; continue
     (do 
       (when-let [l (listing/get id)]
-        (listing/update (assoc l (keyword action) true)))
+        (cond
+         (= action "comment") (listing/add-comment id value)
+         (= action "tag") (listing/add-tag id value)
+         (= action "remove-tag") (listing/remove-tag id value)
+         :else (listing/update (assoc l (keyword action) true))))
+      
       (println "DOING AN ACTION" id action inline)
+      
       (if (not inline)
         ;; no js response (sucks)
         (let [astr (apply str (map #(str "&areas[]=" %) areas))]
@@ -188,7 +208,6 @@
     (Integer/parseInt i)))
 
 (defpage "/" {:keys [min-price max-price areas text] :as selected}
-  (println "SEL" selected)
   (let [listings (map classification/classify-listing (listing/list))
         options (classification/get-options listings)
         min-price (parse-int min-price)
@@ -196,6 +215,11 @@
         filtered-listings (filter-listings listings min-price max-price areas text)]
     (println (count listings))
     (common/page-layout
+     ;; TODO: christ can you say injection?
+     [:script {:type "text/javascript"}
+      "var tagsSource = ["
+      (reduce #(str %1 (format "\"%s\"," %2)) "" (:tags options))
+      "];"]
      (common/navbar)
      (common/fluid-layout
       (listing-sidebar options selected)

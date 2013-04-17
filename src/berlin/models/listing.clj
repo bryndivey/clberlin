@@ -14,7 +14,12 @@
 
 (defn add-new
   [{:keys [id url title content posted reply] :as listing}]
-  (insert (classification/classify-listing (merge listing {:seen false :hidden false}))))
+  (insert (classification/classify-listing (merge 
+                                            listing 
+                                            {:seen false
+                                             :hidden false
+                                             :tags []
+                                             :comments nil}))))
 
 (defn list
   []
@@ -56,8 +61,27 @@
   [id]
   (gfs/find-one {:filename id}))
 
+(defn add-comment
+  [id comment]
+  (when-let [l (get id)]
+    (update (assoc l :comments (str (:comments l) "\n" comment)))))
+
+(defn add-tag
+  [id tag]
+  (when-let [l (get id)]
+    (update (assoc l :tags (set (conj (:tags l) tag))))))
+
+(defn remove-tag
+  [id tag]
+  (when-let [l (get id)]
+    (update (assoc l :tags (remove #{tag} (:tags l))))))
 
 (defn reclassify
   []
   (for [listing (list)]
-    (update (classification/classify-listing listing))))
+    (try
+      (update (classification/classify-listing listing))
+      (catch Exception e
+        (do
+          (println "Exception with id " (:id listing) e)) ))))
+
